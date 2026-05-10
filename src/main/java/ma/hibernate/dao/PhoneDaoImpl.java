@@ -53,18 +53,11 @@ public class PhoneDaoImpl extends AbstractDao implements PhoneDao {
                 String field = entry.getKey();
                 String[] values = entry.getValue();
 
-                if (values == null || values.length == 0) {
-                    continue;
-                }
-
                 predicates.add(
                         root.get(field).in((Object[]) values));
             }
             query.select(root);
-
-            if (!predicates.isEmpty()) {
-                query.where(cb.and(predicates.toArray(new Predicate[0])));
-            }
+            query.where(cb.and(predicates.toArray(new Predicate[0])));
             return session.createQuery(query).getResultList();
         } finally {
             session.close();
