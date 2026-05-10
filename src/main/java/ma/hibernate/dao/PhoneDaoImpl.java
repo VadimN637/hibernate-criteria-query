@@ -53,13 +53,9 @@ public class PhoneDaoImpl extends AbstractDao implements PhoneDao {
                 continue;
             }
 
-            if (values.length == 1) {
-                predicates.add(
-                        cb.equal(root.get(field), values[0]));
-            } else {
-                predicates.add(
-                        root.get(field).in((Object[]) values));
-            }
+            predicates.add(
+                    root.get(field).in((Object[]) values));
+
         }
 
         query.select(root);
