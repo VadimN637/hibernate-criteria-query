@@ -13,6 +13,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 
 public class PhoneDaoImpl extends AbstractDao implements PhoneDao {
+
     public PhoneDaoImpl(SessionFactory sessionFactory) {
         super(sessionFactory);
     }
@@ -21,8 +22,9 @@ public class PhoneDaoImpl extends AbstractDao implements PhoneDao {
     public Phone create(Phone phone) {
         Session session = factory.openSession();
         Transaction transaction = null;
+
         try {
-            transaction = (Transaction) session.beginTransaction();
+            transaction = session.beginTransaction();
             session.persist(phone);
             transaction.commit();
             return phone;
@@ -30,7 +32,7 @@ public class PhoneDaoImpl extends AbstractDao implements PhoneDao {
             if (transaction != null) {
                 transaction.rollback();
             }
-            throw new RuntimeException("Can't create phone", e);
+            throw new RuntimeException("Can't create phone " + phone, e);
         } finally {
             session.close();
         }
@@ -39,29 +41,33 @@ public class PhoneDaoImpl extends AbstractDao implements PhoneDao {
     @Override
     public List<Phone> findAll(Map<String, String[]> params) {
         Session session = factory.openSession();
-        CriteriaBuilder cb = session.getCriteriaBuilder();
-        CriteriaQuery<Phone> query = cb.createQuery(Phone.class);
-        Root<Phone> root = query.from(Phone.class);
 
-        List<Predicate> predicates = new ArrayList<>();
+        try {
+            CriteriaBuilder cb = session.getCriteriaBuilder();
+            CriteriaQuery<Phone> query = cb.createQuery(Phone.class);
+            Root<Phone> root = query.from(Phone.class);
+            List<Predicate> predicates = new ArrayList<>();
 
-        for (Map.Entry<String, String[]> entry : params.entrySet()) {
-            String field = entry.getKey();
-            String[] values = entry.getValue();
+            for (Map.Entry<String, String[]> entry : params.entrySet()) {
 
-            if (values == null || values.length == 0) {
-                continue;
+                String field = entry.getKey();
+                String[] values = entry.getValue();
+
+                if (values == null || values.length == 0) {
+                    continue;
+                }
+
+                predicates.add(
+                        root.get(field).in((Object[]) values));
             }
+            query.select(root);
 
-            predicates.add(
-                    root.get(field).in((Object[]) values));
-
+            if (!predicates.isEmpty()) {
+                query.where(cb.and(predicates.toArray(new Predicate[0])));
+            }
+            return session.createQuery(query).getResultList();
+        } finally {
+            session.close();
         }
-
-        query.select(root);
-        if (!predicates.isEmpty()) {
-            query.where(cb.and(predicates.toArray(new Predicate[0])));
-        }
-        return session.createQuery(query).getResultList();
     }
 }
